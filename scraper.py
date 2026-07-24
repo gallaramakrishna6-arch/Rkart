@@ -1,0 +1,314 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.service import Service
+import time
+import re
+
+
+def get_driver():
+    options = Options()
+    options.add_argument("--start-maximized")
+    return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
+
+
+def clean_price(price_text):
+    match = re.search(r"[\d,]+", price_text.replace(",", ""))
+    return float(match.group().replace(",", "")) if match else None
+
+
+def scroll_full_page(driver):
+    last_height = driver.execute_script("return document.body.scrollHeight")
+    for _ in range(6):
+        driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        time.sleep(1)
+        new_height = driver.execute_script("return document.body.scrollHeight")
+        if new_height == last_height:
+            break
+        last_height = new_height
+    driver.execute_script("window.scrollTo(0, 0);")
+    time.sleep(1)
+
+
+DEFAULT_IMAGE = "https://placehold.co/150x150?text=No+Image"
+
+
+def get_image_src(img_element):
+    for attr in ["src", "data-src", "data-image-source", "srcset"]:
+        value = img_element.get_attribute(attr)
+        if value and value.startswith("http"):
+            return value.split(" ")[0]
+    return DEFAULT_IMAGE
+
+
+def search_amazon(query):
+    driver = get_driver()
+    results = []
+    try:
+        driver.get(f"https://www.amazon.in/s?k={query.replace(' ', '+')}")
+        time.sleep(4)
+
+        products = driver.find_elements(By.CSS_SELECTOR, "div[data-component-type='s-search-result']")
+        for product in products:
+            try:
+                name = product.find_element(By.CSS_SELECTOR, "h2 span").text.strip()
+                price_whole = product.find_element(By.CSS_SELECTOR, "span.a-price-whole").text.strip()
+                price = clean_price(price_whole)
+
+                try:
+                    link = product.find_element(By.XPATH, ".//a[contains(@href, '/dp/')]").get_attribute("href")
+                except:
+                    try:
+                        link = product.find_element(By.CSS_SELECTOR, "a.a-link-normal").get_attribute("href")
+                    except:
+                        link = "https://www.amazon.in/s?k=" + query.replace(" ", "+")
+
+                try:
+                    img = product.find_element(By.CSS_SELECTOR, "img.s-image")
+                    image = get_image_src(img)
+                except:
+                    image = DEFAULT_IMAGE
+
+                if name and price:
+                    results.append({"site": "Amazon", "name": name, "price": price, "link": link, "image": image})
+            except:
+                continue
+    except Exception as e:
+        print("Amazon error:", e)
+    driver.quit()
+    return results
+
+
+def is_junk_line(line):
+    line = line.strip()
+    if not line or line.startswith("₹") or "% off" in line.lower():
+        return True
+    if re.fullmatch(r"[\d,.]+", line):
+        return True
+    if line.lower() in ("only few left", "add to compare", "sponsored"):
+        return True
+    return False
+
+
+def find_best_name(price_el):
+    best_name = "Unknown"
+    best_len = 0
+    for level in range(2, 7):
+        try:
+            container = price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
+            for line in container.text.strip().split("\n"):
+                if not is_junk_line(line) and len(line) > best_len:
+                    best_len = len(line)
+                    best_name = line.strip()
+        except:
+            continue
+    return best_name
+
+
+def find_image_and_link(price_el, fallback_link):
+    image = DEFAULT_IMAGE
+    link = fallback_link
+
+    for level in range(2, 8):
+        try:
+            container = price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
+            try:
+                img = container.find_element(By.TAG_NAME, "img")
+                image = get_image_src(img)
+            except:
+                pass
+            break
+        except:
+            continue
+
+    try:
+        ancestor_links = price_el.find_elements(By.XPATH, "./ancestor::a")
+        if ancestor_links:
+            href = ancestor_links[-1].get_attribute("href")
+            if href:
+                link = href
+    except:
+        pass
+
+    return image, link
+
+
+def search_flipkart(query):
+    driver = get_driver()
+    results = []
+    try:
+        driver.get(f"https://www.flipkart.com/search?q={query.replace(' ', '+')}")
+        time.sleep(3)
+        try:
+            driver.find_element(By.XPATH, "//button[text()='✕']").click()
+        except:
+            pass
+        time.sleep(1)
+        scroll_full_page(driver)
+
+        price_elements = driver.find_elements(By.XPATH, "//div[starts-with(text(), '₹')]")
+        seen = set()
+        fallback = "https://www.flipkart.com/search?q=" + query.replace(" ", "+")
+        for price_el in price_elements:
+            price = clean_price(price_el.text.strip())
+            if not price:
+                continue
+            name = find_best_name(price_el)
+            image, link = find_image_and_link(price_el, fallback)
+            key = (name, price)
+            if key not in seen:
+                seen.add(key)
+                results.append({"site": "Flipkart", "name": name, "price": price, "link": link, "image": image})
+    except Exception as e:
+        print("Flipkart error:", e)
+    driver.quit()
+    return results
+
+
+def search_myntra(query):
+    driver = get_driver()
+    results = []
+    try:
+        driver.get(f"https://www.myntra.com/{query.replace(' ', '-')}")
+        time.sleep(3)
+        scroll_full_page(driver)
+
+        products = driver.find_elements(By.CSS_SELECTOR, "li.product-base")
+        for product in products:
+            try:
+                brand = product.find_element(By.CSS_SELECTOR, ".product-brand").text.strip()
+            except:
+                brand = ""
+            try:
+                title = product.find_element(By.CSS_SELECTOR, ".product-product").text.strip()
+            except:
+                title = ""
+            try:
+                price_text = product.find_element(By.CSS_SELECTOR, ".product-discountedPrice").text.strip()
+            except:
+                try:
+                    price_text = product.find_element(By.CSS_SELECTOR, ".product-price span").text.strip()
+                except:
+                    continue
+            price = clean_price(price_text)
+            name = f"{brand} {title}".strip()
+
+            try:
+                img = product.find_element(By.TAG_NAME, "img")
+                image = get_image_src(img)
+            except:
+                image = DEFAULT_IMAGE
+
+            try:
+                link = product.find_element(By.TAG_NAME, "a").get_attribute("href")
+            except:
+                link = "https://www.myntra.com/" + query.replace(" ", "-")
+
+            if name and price:
+                results.append({"site": "Myntra", "name": name, "price": price, "link": link, "image": image})
+    except Exception as e:
+        print("Myntra error:", e)
+    driver.quit()
+    return results
+
+
+def search_bigbasket(query):
+    driver = get_driver()
+    results = []
+    try:
+        url = f"https://www.bigbasket.com/ps/?q={query.replace(' ', '+')}"
+        driver.get(url)
+        time.sleep(4)
+        scroll_full_page(driver)
+
+        price_elements = driver.find_elements(By.XPATH, "//span[starts-with(text(), '₹')]")
+        seen = set()
+        for price_el in price_elements:
+            price = clean_price(price_el.text.strip())
+            if not price:
+                continue
+            name = find_best_name(price_el)
+            image, link = find_image_and_link(price_el, url)
+            key = (name, price)
+            if key not in seen:
+                seen.add(key)
+                results.append({"site": "BigBasket", "name": name, "price": price, "link": link, "image": image})
+    except Exception as e:
+        print("BigBasket error:", e)
+    driver.quit()
+    return results
+
+
+def search_zepto(query):
+    driver = get_driver()
+    results = []
+    try:
+        url = f"https://www.zeptonow.com/search?query={query.replace(' ', '%20')}"
+        driver.get(url)
+        time.sleep(4)
+        scroll_full_page(driver)
+
+        price_elements = driver.find_elements(By.XPATH, "//*[starts-with(text(), '₹')]")
+        seen = set()
+        for price_el in price_elements:
+            price = clean_price(price_el.text.strip())
+            if not price:
+                continue
+            name = find_best_name(price_el)
+            image, link = find_image_and_link(price_el, url)
+            key = (name, price)
+            if key not in seen:
+                seen.add(key)
+                results.append({"site": "Zepto", "name": name, "price": price, "link": link, "image": image})
+    except Exception as e:
+        print("Zepto error:", e)
+    driver.quit()
+    return results
+
+
+def search_blinkit(query):
+    driver = get_driver()
+    results = []
+    try:
+        url = f"https://blinkit.com/s/?q={query.replace(' ', '%20')}"
+        driver.get(url)
+        time.sleep(4)
+        scroll_full_page(driver)
+
+        price_elements = driver.find_elements(By.XPATH, "//*[starts-with(text(), '₹')]")
+        seen = set()
+        for price_el in price_elements:
+            price = clean_price(price_el.text.strip())
+            if not price:
+                continue
+            name = find_best_name(price_el)
+            image, link = find_image_and_link(price_el, url)
+            key = (name, price)
+            if key not in seen:
+                seen.add(key)
+                results.append({"site": "Blinkit", "name": name, "price": price, "link": link, "image": image})
+    except Exception as e:
+        print("Blinkit error:", e)
+    driver.quit()
+    return results
+
+
+def search_products(query):
+    all_results = []
+    all_results += search_amazon(query)
+    all_results += search_flipkart(query)
+    all_results += search_myntra(query)
+    all_results += search_bigbasket(query)
+    all_results += search_zepto(query)
+    all_results += search_blinkit(query)
+
+    query_words = [w.lower() for w in query.split() if len(w) > 2]
+    filtered_results = []
+    for item in all_results:
+        item_name_lower = item["name"].lower()
+        if any(word in item_name_lower for word in query_words):
+            filtered_results.append(item)
+
+    filtered_results.sort(key=lambda x: x["price"])
+    return filtered_results
