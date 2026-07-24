@@ -14,9 +14,10 @@ def get_driver():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    options.add_argument("--single-process")
+    options.add_argument("--disable-setuid-sandbox")
     options.add_argument("--disable-extensions")
     options.add_argument("--window-size=1024,768")
+    options.add_argument("--remote-debugging-port=9222")
     options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36")
 
     chrome_bin = os.environ.get("CHROME_BIN")
