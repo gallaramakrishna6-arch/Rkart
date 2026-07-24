@@ -15,4 +15,4 @@ COPY . .
 ENV CHROME_BIN=/usr/bin/google-chrome
 
 EXPOSE 10000
-CMD ["gunicorn", "-b", "0.0.0.0:10000", "app:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:10000", "--workers", "1", "--timeout", "600", "app:app"]
