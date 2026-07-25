@@ -312,8 +312,6 @@ def search_products(query):
     all_results = []
     all_results += search_amazon(query)
     all_results += search_flipkart(query)
-    all_results += search_myntra(query)
-    all_results += search_bigbasket(query)
     all_results += search_zepto(query)
     all_results += search_blinkit(query)
 
