@@ -307,12 +307,25 @@ def search_blinkit(query):
     return results
 
 
+GROCERY_KEYWORDS = [
+    "milk", "rice", "atta", "flour", "oil", "sugar", "salt", "maggi", "noodles",
+    "biscuit", "snacks", "tea", "coffee", "soap", "shampoo", "vegetable", "fruit",
+    "grocery", "dal", "pulses", "ghee", "butter", "bread", "egg", "paneer",
+    "detergent", "cleaner", "toothpaste", "juice", "water", "chips"
+]
+
+
 def search_products(query):
+    query_lower = query.lower()
+    is_grocery = any(word in query_lower for word in GROCERY_KEYWORDS)
+
     all_results = []
-    all_results += search_amazon(query)
-    all_results += search_flipkart(query)
-    all_results += search_zepto(query)
-    all_results += search_blinkit(query)
+    if is_grocery:
+        all_results += search_zepto(query)
+        all_results += search_blinkit(query)
+    else:
+        all_results += search_amazon(query)
+        all_results += search_flipkart(query)
 
     query_words = [w.lower() for w in query.split() if len(w) > 2]
     filtered_results = []
@@ -322,4 +335,4 @@ def search_products(query):
             filtered_results.append(item)
 
     filtered_results.sort(key=lambda x: x["price"])
-    return filtered_results
+    return filtered_results[:5]
