@@ -34,15 +34,15 @@ def clean_price(price_text):
 
 def scroll_full_page(driver):
     last_height = driver.execute_script("return document.body.scrollHeight")
-    for _ in range(6):
+    for _ in range(3):
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(1)
+        time.sleep(0.7)
         new_height = driver.execute_script("return document.body.scrollHeight")
         if new_height == last_height:
             break
         last_height = new_height
     driver.execute_script("window.scrollTo(0, 0);")
-    time.sleep(1)
+    time.sleep(0.5)
 
 
 DEFAULT_IMAGE = "https://placehold.co/150x150?text=No+Image"
@@ -61,7 +61,7 @@ def search_amazon(query):
     results = []
     try:
         driver.get(f"https://www.amazon.in/s?k={query.replace(' ', '+')}")
-        time.sleep(4)
+        time.sleep(2.5)
 
         products = driver.find_elements(By.CSS_SELECTOR, "div[data-component-type='s-search-result']")
         for product in products:
@@ -108,7 +108,7 @@ def is_junk_line(line):
 def find_best_name(price_el):
     best_name = "Unknown"
     best_len = 0
-    for level in range(2, 7):
+    for level in range(2, 6):
         try:
             container = price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
             for line in container.text.strip().split("\n"):
@@ -124,7 +124,7 @@ def find_image_and_link(price_el, fallback_link):
     image = DEFAULT_IMAGE
     link = fallback_link
 
-    for level in range(2, 8):
+    for level in range(2, 6):
         try:
             container = price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
             try:
@@ -153,12 +153,11 @@ def search_flipkart(query):
     results = []
     try:
         driver.get(f"https://www.flipkart.com/search?q={query.replace(' ', '+')}")
-        time.sleep(3)
+        time.sleep(2)
         try:
             driver.find_element(By.XPATH, "//button[text()='✕']").click()
         except:
             pass
-        time.sleep(1)
         scroll_full_page(driver)
 
         price_elements = driver.find_elements(By.XPATH, "//div[starts-with(text(), '₹')]")
@@ -185,7 +184,7 @@ def search_myntra(query):
     results = []
     try:
         driver.get(f"https://www.myntra.com/{query.replace(' ', '-')}")
-        time.sleep(3)
+        time.sleep(2)
         scroll_full_page(driver)
 
         products = driver.find_elements(By.CSS_SELECTOR, "li.product-base")
@@ -233,7 +232,7 @@ def search_bigbasket(query):
     try:
         url = f"https://www.bigbasket.com/ps/?q={query.replace(' ', '+')}"
         driver.get(url)
-        time.sleep(4)
+        time.sleep(2.5)
         scroll_full_page(driver)
 
         price_elements = driver.find_elements(By.XPATH, "//span[starts-with(text(), '₹')]")
@@ -260,7 +259,7 @@ def search_zepto(query):
     try:
         url = f"https://www.zeptonow.com/search?query={query.replace(' ', '%20')}"
         driver.get(url)
-        time.sleep(4)
+        time.sleep(2.5)
         scroll_full_page(driver)
 
         price_elements = driver.find_elements(By.XPATH, "//*[starts-with(text(), '₹')]")
@@ -287,7 +286,7 @@ def search_blinkit(query):
     try:
         url = f"https://blinkit.com/s/?q={query.replace(' ', '%20')}"
         driver.get(url)
-        time.sleep(4)
+        time.sleep(2.5)
         scroll_full_page(driver)
 
         price_elements = driver.find_elements(By.XPATH, "//*[starts-with(text(), '₹')]")
