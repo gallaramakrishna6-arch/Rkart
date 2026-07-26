@@ -1,4 +1,4 @@
-import os
+﻿import os
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -101,6 +101,13 @@ def is_junk_line(line):
     if re.fullmatch(r"[\d,.]+", line):
         return True
     if line.lower() in ("only few left", "add to compare", "sponsored"):
+        return True
+    if "!" in line or line.count(".") > 1:
+        return True
+    if any(word in line.lower() for word in [" i ", "recommend", "review", "excellent", "worst", "good product", "bad product", "using this"]):
+        return True
+    word_count = len(line.split())
+    if word_count > 10:
         return True
     return False
 
