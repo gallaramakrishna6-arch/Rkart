@@ -100,58 +100,62 @@ def is_junk_line(line):
         return True
     if re.fullmatch(r"[\d,.]+", line):
         return True
-    if line.lower() in ("only few left", "add to compare", "sponsored"):
+    if line.lower() in ("only few left", "add to compare", "sponsored", "buy now", "out of stock", "login"):
         return True
     if "!" in line or line.count(".") > 1:
         return True
-    if any(word in line.lower() for word in [" i ", "recommend", "review", "excellent", "worst", "good product", "bad product", "using this"]):
+    if any(word in line.lower() for word in [" i ", "recommend", "review", "excellent", "worst", "good product", "bad product", "using this", "emi", "left"]):
         return True
     word_count = len(line.split())
-    if word_count > 10:
+    if word_count > 10 or word_count == 0:
         return True
     return False
 
 
-def find_best_name(price_el):
-    best_name = "Unknown"
-    best_len = 0
-    for level in range(2, 6):
+def get_card_container(price_el):
+    # ముందుగా, ఈ price ఏ <a> లింక్ లోపల ఉందో చూడటం — ఇదే సాధారణంగా పూర్తి ప్రొడక్ట్ కార్డ్
+    try:
+        anchors = price_el.find_elements(By.XPATH, "./ancestor::a")
+        if anchors:
+            return anchors[-1]
+    except:
+        pass
+    # <a> దొరకకపోతే, ఒక స్థిరమైన div స్థాయి వాడటం
+    for level in [4, 3, 5, 2, 6]:
         try:
-            container = price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
-            for line in container.text.strip().split("\n"):
-                if not is_junk_line(line) and len(line) > best_len:
-                    best_len = len(line)
-                    best_name = line.strip()
+            return price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
         except:
             continue
+    return None
+
+
+def extract_name_from_container(container):
+    best_name = "Unknown"
+    best_len = 0
+    try:
+        for line in container.text.strip().split("\n"):
+            if not is_junk_line(line) and len(line) > best_len:
+                best_len = len(line)
+                best_name = line.strip()
+    except:
+        pass
     return best_name
 
 
-def find_image_and_link(price_el, fallback_link):
+def extract_image_from_container(container, fallback_link):
     image = DEFAULT_IMAGE
     link = fallback_link
-
-    for level in range(2, 6):
-        try:
-            container = price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
-            try:
-                img = container.find_element(By.TAG_NAME, "img")
-                image = get_image_src(img)
-            except:
-                pass
-            break
-        except:
-            continue
-
     try:
-        ancestor_links = price_el.find_elements(By.XPATH, "./ancestor::a")
-        if ancestor_links:
-            href = ancestor_links[-1].get_attribute("href")
-            if href:
-                link = href
+        img = container.find_element(By.TAG_NAME, "img")
+        image = get_image_src(img)
     except:
         pass
-
+    try:
+        href = container.get_attribute("href")
+        if href:
+            link = href
+    except:
+        pass
     return image, link
 
 
@@ -174,10 +178,16 @@ def search_flipkart(query):
             price = clean_price(price_el.text.strip())
             if not price:
                 continue
-            name = find_best_name(price_el)
-            image, link = find_image_and_link(price_el, fallback)
+
+            container = get_card_container(price_el)
+            if container is None:
+                continue
+
+            name = extract_name_from_container(container)
+            image, link = extract_image_from_container(container, fallback)
+
             key = (name, price)
-            if key not in seen:
+            if key not in seen and name != "Unknown":
                 seen.add(key)
                 results.append({"site": "Flipkart", "name": name, "price": price, "link": link, "image": image})
     except Exception as e:
@@ -248,10 +258,13 @@ def search_bigbasket(query):
             price = clean_price(price_el.text.strip())
             if not price:
                 continue
-            name = find_best_name(price_el)
-            image, link = find_image_and_link(price_el, url)
+            container = get_card_container(price_el)
+            if container is None:
+                continue
+            name = extract_name_from_container(container)
+            image, link = extract_image_from_container(container, url)
             key = (name, price)
-            if key not in seen:
+            if key not in seen and name != "Unknown":
                 seen.add(key)
                 results.append({"site": "BigBasket", "name": name, "price": price, "link": link, "image": image})
     except Exception as e:
@@ -275,10 +288,13 @@ def search_zepto(query):
             price = clean_price(price_el.text.strip())
             if not price:
                 continue
-            name = find_best_name(price_el)
-            image, link = find_image_and_link(price_el, url)
+            container = get_card_container(price_el)
+            if container is None:
+                continue
+            name = extract_name_from_container(container)
+            image, link = extract_image_from_container(container, url)
             key = (name, price)
-            if key not in seen:
+            if key not in seen and name != "Unknown":
                 seen.add(key)
                 results.append({"site": "Zepto", "name": name, "price": price, "link": link, "image": image})
     except Exception as e:
@@ -302,10 +318,13 @@ def search_blinkit(query):
             price = clean_price(price_el.text.strip())
             if not price:
                 continue
-            name = find_best_name(price_el)
-            image, link = find_image_and_link(price_el, url)
+            container = get_card_container(price_el)
+            if container is None:
+                continue
+            name = extract_name_from_container(container)
+            image, link = extract_image_from_container(container, url)
             key = (name, price)
-            if key not in seen:
+            if key not in seen and name != "Unknown":
                 seen.add(key)
                 results.append({"site": "Blinkit", "name": name, "price": price, "link": link, "image": image})
     except Exception as e:
