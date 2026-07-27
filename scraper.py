@@ -104,7 +104,7 @@ def is_junk_line(line):
         return True
     if "!" in line or line.count(".") > 1:
         return True
-    if any(word in line.lower() for word in [" i ", "recommend", "review", "excellent", "worst", "good product", "bad product", "using this", "emi", "left"]):
+    if any(word in line.lower() for word in [" i ", "recommend", "review", "excellent", "worst", "good product", "bad product", "using this", "emi", "left", "protect promise"]):
         return True
     word_count = len(line.split())
     if word_count > 10 or word_count == 0:
@@ -112,15 +112,22 @@ def is_junk_line(line):
     return False
 
 
-def get_card_container(price_el):
-    # ముందుగా, ఈ price ఏ <a> లింక్ లోపల ఉందో చూడటం — ఇదే సాధారణంగా పూర్తి ప్రొడక్ట్ కార్డ్
+def get_card_container(price_el, require_product_link=False):
     try:
         anchors = price_el.find_elements(By.XPATH, "./ancestor::a")
         if anchors:
-            return anchors[-1]
+            candidate = anchors[-1]
+            href = candidate.get_attribute("href") or ""
+            if require_product_link:
+                if "/p/" in href:
+                    return candidate
+            else:
+                if href.startswith("http"):
+                    return candidate
     except:
         pass
-    # <a> దొరకకపోతే, ఒక స్థిరమైన div స్థాయి వాడటం
+    if require_product_link:
+        return None
     for level in [4, 3, 5, 2, 6]:
         try:
             return price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
@@ -173,21 +180,21 @@ def search_flipkart(query):
 
         price_elements = driver.find_elements(By.XPATH, "//div[starts-with(text(), '₹')]")
         seen = set()
-        fallback = "https://www.flipkart.com/search?q=" + query.replace(" ", "+")
         for price_el in price_elements:
             price = clean_price(price_el.text.strip())
             if not price:
                 continue
 
-            container = get_card_container(price_el)
+            # ప్రొడక్ట్ లింక్ pattern (/p/) లేని వాటిని (widgets, EMI boxes) పూర్తిగా skip చేయడం
+            container = get_card_container(price_el, require_product_link=True)
             if container is None:
                 continue
 
             name = extract_name_from_container(container)
-            image, link = extract_image_from_container(container, fallback)
+            image, link = extract_image_from_container(container, "")
 
-            key = (name, price)
-            if key not in seen and name != "Unknown":
+            key = (link, price)
+            if key not in seen and name != "Unknown" and link:
                 seen.add(key)
                 results.append({"site": "Flipkart", "name": name, "price": price, "link": link, "image": image})
     except Exception as e:
