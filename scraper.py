@@ -112,30 +112,6 @@ def is_junk_line(line):
     return False
 
 
-def get_card_container(price_el, require_product_link=False):
-    try:
-        anchors = price_el.find_elements(By.XPATH, "./ancestor::a")
-        if anchors:
-            candidate = anchors[-1]
-            href = candidate.get_attribute("href") or ""
-            if require_product_link:
-                if "/p/" in href:
-                    return candidate
-            else:
-                if href.startswith("http"):
-                    return candidate
-    except:
-        pass
-    if require_product_link:
-        return None
-    for level in [4, 3, 5, 2, 6]:
-        try:
-            return price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
-        except:
-            continue
-    return None
-
-
 def extract_name_from_container(container):
     best_name = "Unknown"
     best_len = 0
@@ -166,6 +142,28 @@ def extract_image_from_container(container, fallback_link):
     return image, link
 
 
+def get_flipkart_container(price_el):
+    # ధర సమీపంలో /p/ లింక్ ఉన్న అన్ని ancestor <a> లు వెతకడం
+    try:
+        anchors = price_el.find_elements(By.XPATH, "./ancestor::a[contains(@href,'/p/')]")
+        if anchors:
+            # అతి చిన్న (tightest) container ఎంచుకోవడం — వేరే ప్రొడక్ట్‌లతో కలవకుండా ఉండటానికి
+            anchors_sorted = sorted(anchors, key=lambda a: len(a.text or ""))
+            return anchors_sorted[0]
+    except:
+        pass
+    return None
+
+
+def get_card_container(price_el):
+    for level in [4, 3, 5, 2, 6]:
+        try:
+            return price_el.find_element(By.XPATH, f"./ancestor::div[{level}]")
+        except:
+            continue
+    return None
+
+
 def search_flipkart(query):
     driver = get_driver()
     results = []
@@ -185,16 +183,19 @@ def search_flipkart(query):
             if not price:
                 continue
 
-            # ప్రొడక్ట్ లింక్ pattern (/p/) లేని వాటిని (widgets, EMI boxes) పూర్తిగా skip చేయడం
-            container = get_card_container(price_el, require_product_link=True)
+            container = get_flipkart_container(price_el)
             if container is None:
                 continue
 
             name = extract_name_from_container(container)
             image, link = extract_image_from_container(container, "")
 
+            # ఖచ్చితత్వం కోసం — ప్రొడక్ట్ పేరులో query పదాలు కనీసం ఒకటి ఉండాలి
+            if name == "Unknown" or not link:
+                continue
+
             key = (link, price)
-            if key not in seen and name != "Unknown" and link:
+            if key not in seen:
                 seen.add(key)
                 results.append({"site": "Flipkart", "name": name, "price": price, "link": link, "image": image})
     except Exception as e:
