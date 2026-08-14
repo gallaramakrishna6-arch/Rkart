@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Saved Products — RKart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1120; --ink-2:#111a2e; --ink-3:#182238;
+    --line:rgba(255,255,255,0.08);
+    --text:#EDEFF5; --text-dim:#9AA4BD;
+    --gold:#D4A54E; --gold-soft:rgba(212,165,78,0.14);
+    --mint:#2DD4BF;
+    --danger:#E8654F;
+    --radius:16px; --serif:'Fraunces', serif; --sans:'Manrope', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(212,165,78,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(45,212,191,0.08), transparent 55%),
+      var(--ink);
+    color:var(--text); font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit; text-decoration:none;}
+  button{font-family:var(--sans); cursor:pointer;}
+  .wrap{max-width:960px; margin:0 auto; padding:0 24px;}
+  header{padding:18px 28px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;}
+  .brand-logo{
+    display:inline-flex; align-items:center; gap:9px;
+    font-family:var(--serif); font-size:23px; font-weight:700;
+    padding:5px 12px 5px 6px; border-radius:10px;
+    background:linear-gradient(135deg, rgba(212,165,78,0.16), rgba(212,165,78,0.02));
+    border:1px solid rgba(212,165,78,0.28);
+  }
+  .brand-logo .dot{width:9px; height:9px; border-radius:50%; background:var(--gold); box-shadow:0 0 14px var(--gold); margin-right:2px;}
+  .brand-logo .rk{color:var(--gold);}
+  .brand-logo .art{color:var(--text);}
+  .back-btn{
+    font-size:13px; font-weight:700; color:var(--text-dim);
+    border:1px solid var(--line); padding:8px 14px; border-radius:9px; transition:.15s;
+  }
+  .back-btn:hover{border-color:var(--gold); color:var(--gold);}
+
+  .page-head{padding:40px 0 24px;}
+  .page-head h1{font-family:var(--serif); font-size:28px; font-weight:600;}
+  .page-head p{color:var(--text-dim); font-size:14px; margin-top:4px;}
+
+  .prod-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom:40px;}
+  @media (max-width:760px){ .prod-grid{grid-template-columns:repeat(2, 1fr);} }
+  @media (max-width:480px){ .prod-grid{grid-template-columns:1fr;} }
+  .prod-card{
+    background:var(--ink-2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:16px; position:relative;
+  }
+  .prod-card img{width:100%; aspect-ratio:1/1; object-fit:cover; border-radius:10px; background:var(--ink-3); margin-bottom:12px;}
+  .prod-card .nm{
+    font-size:13.5px; margin-bottom:6px; display:-webkit-box; -webkit-line-clamp:2;
+    -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .prod-card .src{font-size:12px; color:var(--text-dim); margin-bottom:8px;}
+  .prod-card .price{font-family:var(--serif); font-size:19px; font-weight:600; margin-bottom:10px;}
+  .prod-card .row{display:flex; gap:8px;}
+  .prod-card .visit{font-size:12px; font-weight:700; color:var(--mint);}
+  .prod-card .remove{font-size:12px; font-weight:700; color:var(--danger); background:none; border:none; margin-left:auto;}
+
+  .empty-state{
+    text-align:center; padding:80px 20px; background:var(--ink-2);
+    border:1px dashed var(--line); border-radius:var(--radius); color:var(--text-dim);
+  }
+  .empty-state .icon{font-size:36px; margin-bottom:16px;}
+  .empty-state h3{font-family:var(--serif); font-size:21px; color:var(--text); margin-bottom:8px;}
+  .empty-state a{color:var(--gold); font-weight:700;}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="brand-logo"><span class="dot"></span><span class="rk">RK</span><span class="art">art</span></a>
+  <a href="/" class="back-btn">← Back to shopping</a>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>Saved Products</h1>
+    <p>{{ items|length }} product{{ 's' if items|length != 1 else '' }} favorited</p>
+  </div>
+
+  {% if items and items|length > 0 %}
+  <div class="prod-grid">
+    {% for item in items %}
+    <div class="prod-card">
+      <img src="{{ item.image if item.image else 'https://placehold.co/200x200/182238/9AA4BD?text=No+Image' }}"
+           alt="{{ item.name }}" onerror="this.onerror=null;this.src='https://placehold.co/200x200/182238/9AA4BD?text=No+Image';">
+      <div class="nm">{{ item.name }}</div>
+      <div class="src">{{ item.store }} · {{ item.saved_at|relative_time }}</div>
+      <div class="price">₹{{ "{:,.0f}".format(item.price|float) if item.price else "—" }}</div>
+      <div class="row">
+        <a class="visit" href="{{ item.link }}" target="_blank" rel="noopener">Visit store</a>
+        <form method="POST" action="/saved/remove/{{ item.id }}" style="margin-left:auto;">
+          <button type="submit" class="remove">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon">♥</div>
+    <h3>No saved products yet</h3>
+    <p>Tap the heart on any product from search results to favorite it.</p>
+    <p style="margin-top:14px;"><a href="/">Start browsing →</a></p>
+  </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

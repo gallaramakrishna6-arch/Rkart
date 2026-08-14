@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compare List — RKart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1120; --ink-2:#111a2e; --ink-3:#182238;
+    --line:rgba(255,255,255,0.08);
+    --text:#EDEFF5; --text-dim:#9AA4BD;
+    --gold:#D4A54E; --gold-soft:rgba(212,165,78,0.14);
+    --mint:#2DD4BF; --mint-soft:rgba(45,212,191,0.14);
+    --danger:#E8654F; --danger-soft:rgba(232,101,79,0.12);
+    --radius:16px; --serif:'Fraunces', serif; --sans:'Manrope', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(212,165,78,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(45,212,191,0.08), transparent 55%),
+      var(--ink);
+    color:var(--text); font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit; text-decoration:none;}
+  button{font-family:var(--sans); cursor:pointer;}
+  .wrap{max-width:960px; margin:0 auto; padding:0 24px;}
+  header{padding:18px 28px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;}
+  .brand-logo{
+    display:inline-flex; align-items:center; gap:9px;
+    font-family:var(--serif); font-size:23px; font-weight:700;
+    padding:5px 12px 5px 6px; border-radius:10px;
+    background:linear-gradient(135deg, rgba(212,165,78,0.16), rgba(212,165,78,0.02));
+    border:1px solid rgba(212,165,78,0.28);
+  }
+  .brand-logo .dot{width:9px; height:9px; border-radius:50%; background:var(--gold); box-shadow:0 0 14px var(--gold); margin-right:2px;}
+  .brand-logo .rk{color:var(--gold);}
+  .brand-logo .art{color:var(--text);}
+  .back-btn{
+    font-size:13px; font-weight:700; color:var(--text-dim);
+    border:1px solid var(--line); padding:8px 14px; border-radius:9px; transition:.15s;
+  }
+  .back-btn:hover{border-color:var(--gold); color:var(--gold);}
+
+  .page-head{padding:40px 0 24px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;}
+  .page-head h1{font-family:var(--serif); font-size:28px; font-weight:600;}
+  .page-head p{color:var(--text-dim); font-size:14px; margin-top:4px;}
+  .clear-btn{
+    font-size:13px; font-weight:700; color:var(--danger);
+    background:var(--danger-soft); border:1px solid rgba(232,101,79,0.3);
+    padding:9px 16px; border-radius:9px;
+  }
+
+  .compare-table{display:flex; flex-direction:column; gap:1px; background:var(--line); border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); margin-bottom:40px;}
+  .compare-row{background:var(--ink-2); padding:18px 20px; display:flex; align-items:center; gap:16px;}
+  .compare-row img{width:56px; height:56px; object-fit:cover; border-radius:10px; background:var(--ink-3); flex-shrink:0;}
+  .compare-row .info{flex:1; min-width:0;}
+  .compare-row .nm{font-size:14.5px; margin-bottom:4px;}
+  .compare-row .src{font-size:12.5px; color:var(--text-dim);}
+  .compare-row .price{font-family:var(--serif); font-size:20px; font-weight:600; white-space:nowrap;}
+  .compare-row .actions{display:flex; align-items:center; gap:10px;}
+  .compare-row .visit{font-size:12.5px; font-weight:700; color:var(--mint);}
+  .compare-row .remove{font-size:12.5px; font-weight:700; color:var(--danger); background:none; border:none;}
+
+  .empty-state{
+    text-align:center; padding:80px 20px; background:var(--ink-2);
+    border:1px dashed var(--line); border-radius:var(--radius); color:var(--text-dim);
+  }
+  .empty-state .icon{font-size:36px; margin-bottom:16px;}
+  .empty-state h3{font-family:var(--serif); font-size:21px; color:var(--text); margin-bottom:8px;}
+  .empty-state a{color:var(--gold); font-weight:700;}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="brand-logo"><span class="dot"></span><span class="rk">RK</span><span class="art">art</span></a>
+  <a href="/" class="back-btn">← Back to shopping</a>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <div>
+      <h1>Compare List</h1>
+      <p>{{ items|length }} product{{ 's' if items|length != 1 else '' }} added</p>
+    </div>
+    {% if items and items|length > 0 %}
+    <form method="POST" action="/compare/clear">
+      <button type="submit" class="clear-btn">Clear all</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if items and items|length > 0 %}
+  <div class="compare-table">
+    {% for item in items %}
+    <div class="compare-row">
+      <img src="{{ item.image if item.image else 'https://placehold.co/100x100/182238/9AA4BD?text=No+Image' }}"
+           alt="{{ item.name }}" onerror="this.onerror=null;this.src='https://placehold.co/100x100/182238/9AA4BD?text=No+Image';">
+      <div class="info">
+        <div class="nm">{{ item.name }}</div>
+        <div class="src">{{ item.store }} · {{ item.added_at|relative_time }}</div>
+      </div>
+      <div class="price">₹{{ "{:,.0f}".format(item.price|float) if item.price else "—" }}</div>
+      <div class="actions">
+        <a class="visit" href="{{ item.link }}" target="_blank" rel="noopener">Visit store</a>
+        <form method="POST" action="/compare/remove/{{ item.id }}">
+          <button type="submit" class="remove">Remove</button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="icon">⚖️</div>
+    <h3>Your compare list is empty</h3>
+    <p>Add products from search results to compare them side by side.</p>
+    <p style="margin-top:14px;"><a href="/">Start comparing →</a></p>
+  </div>
+  {% endif %}
+</div>
+
+</body>
+</html>

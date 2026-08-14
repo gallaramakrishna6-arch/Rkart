@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analyze a Product URL — RKart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1120; --ink-2:#111a2e; --ink-3:#182238;
+    --line:rgba(255,255,255,0.08);
+    --text:#EDEFF5; --text-dim:#9AA4BD;
+    --gold:#D4A54E; --gold-soft:rgba(212,165,78,0.14);
+    --mint:#2DD4BF; --mint-soft:rgba(45,212,191,0.14);
+    --danger:#E8654F; --danger-soft:rgba(232,101,79,0.12);
+    --radius:16px; --serif:'Fraunces', serif; --sans:'Manrope', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(212,165,78,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(45,212,191,0.08), transparent 55%),
+      var(--ink);
+    color:var(--text); font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit; text-decoration:none;}
+  button{font-family:var(--sans); cursor:pointer;}
+  .wrap{max-width:900px; margin:0 auto; padding:0 24px;}
+  header{padding:18px 28px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;}
+  .brand-logo{
+    display:inline-flex; align-items:center; gap:9px;
+    font-family:var(--serif); font-size:23px; font-weight:700;
+    padding:5px 12px 5px 6px; border-radius:10px;
+    background:linear-gradient(135deg, rgba(212,165,78,0.16), rgba(212,165,78,0.02));
+    border:1px solid rgba(212,165,78,0.28);
+  }
+  .brand-logo .dot{width:9px; height:9px; border-radius:50%; background:var(--gold); box-shadow:0 0 14px var(--gold); margin-right:2px;}
+  .brand-logo .rk{color:var(--gold);}
+  .brand-logo .art{color:var(--text);}
+  .back-btn{
+    font-size:13px; font-weight:700; color:var(--text-dim);
+    border:1px solid var(--line); padding:8px 14px; border-radius:9px; transition:.15s;
+  }
+  .back-btn:hover{border-color:var(--gold); color:var(--gold);}
+
+  .page-head{padding:44px 0 26px; text-align:center;}
+  .page-head h1{font-family:var(--serif); font-size:27px; font-weight:600; margin-bottom:8px;}
+  .page-head p{color:var(--text-dim); font-size:14.5px; max-width:520px; margin:0 auto;}
+
+  .url-form{
+    max-width:620px; margin:0 auto 30px; display:flex; gap:10px;
+    background:var(--ink-2); border:1px solid var(--line);
+    padding:8px; border-radius:14px;
+  }
+  .url-form input{
+    flex:1; background:transparent; border:none; outline:none;
+    color:var(--text); font-family:var(--sans); font-size:14.5px; padding:12px 14px;
+  }
+  .url-form input::placeholder{color:var(--text-dim);}
+  .url-form button{
+    background:linear-gradient(135deg, var(--gold), #b9863a);
+    color:#1a1204; font-weight:700; font-size:14px;
+    border:none; padding:0 22px; border-radius:9px;
+  }
+
+  .disclaimer{
+    max-width:620px; margin:0 auto 30px; text-align:center;
+    font-size:12.5px; color:var(--text-dim);
+  }
+
+  .error-box{
+    max-width:620px; margin:0 auto 30px; background:var(--danger-soft);
+    border:1px solid rgba(232,101,79,0.35); color:#ffb4a8;
+    padding:14px 18px; border-radius:12px; font-size:14px; text-align:center;
+  }
+
+  .matches-label{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12px; font-weight:700; letter-spacing:0.04em; text-transform:uppercase;
+    color:var(--gold); background:var(--gold-soft);
+    border:1px solid rgba(212,165,78,0.3);
+    padding:6px 14px; border-radius:999px; margin-bottom:18px;
+  }
+  .guessed{font-size:13.5px; color:var(--text-dim); margin-bottom:22px;}
+  .guessed b{color:var(--text);}
+
+  .row-list{display:flex; flex-direction:column; gap:1px; background:var(--line); border-radius:var(--radius); overflow:hidden; border:1px solid var(--line); margin-bottom:40px;}
+  .row-item{background:var(--ink-2); padding:16px 20px; display:flex; align-items:center; gap:16px;}
+  .row-item.is-best{background:linear-gradient(90deg, var(--gold-soft), var(--ink-2) 35%);}
+  .row-item img{width:52px; height:52px; object-fit:cover; border-radius:10px; background:var(--ink-3); flex-shrink:0;}
+  .row-item .info{flex:1; min-width:0;}
+  .row-item .nm{font-size:14.5px; margin-bottom:4px;}
+  .row-item .src{font-size:12.5px; color:var(--text-dim);}
+  .row-item .price{font-family:var(--serif); font-size:19px; font-weight:600; white-space:nowrap;}
+  .row-item .buy{
+    font-size:13px; font-weight:700; background:var(--mint-soft); color:var(--mint);
+    padding:9px 16px; border-radius:8px; white-space:nowrap;
+  }
+  .best-tag{font-size:10.5px; font-weight:800; color:var(--gold); letter-spacing:.04em; margin-right:6px;}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="brand-logo"><span class="dot"></span><span class="rk">RK</span><span class="art">art</span></a>
+  <a href="/" class="back-btn">← Back to shopping</a>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>Already found a product?</h1>
+    <p>Paste a product page link and RKart will try to identify it and check prices across all 6 stores.</p>
+  </div>
+
+  <form class="url-form" method="POST" action="/analyze">
+    <input type="url" name="product_url" placeholder="https://www.amazon.in/some-product/dp/B0XXXXX" value="{{ submitted_url }}" required>
+    <button type="submit">Analyze Price</button>
+  </form>
+  <p class="disclaimer">RKart guesses the product name from the URL text — this isn't guaranteed to be exact.</p>
+
+  {% if analyzed %}
+    {% if error %}
+      <div class="error-box">{{ error }}</div>
+    {% endif %}
+
+    {% if results and results|length > 0 %}
+      <div style="text-align:center;">
+        <span class="matches-label">Possible Matches</span>
+      </div>
+      <p class="guessed" style="text-align:center;">Guessed product name: <b>{{ extracted_query }}</b> — not a guaranteed exact match.</p>
+
+      <div class="row-list">
+        {% for item in results %}
+        {% set cls = item.site|lower|replace(' ','') %}
+        <div class="row-item {{ 'is-best' if loop.index == 1 else '' }}">
+          <img src="{{ item.image if item.image else 'https://placehold.co/100x100/182238/9AA4BD?text=No+Image' }}"
+               alt="{{ item.name }}" onerror="this.onerror=null;this.src='https://placehold.co/100x100/182238/9AA4BD?text=No+Image';">
+          <div class="info">
+            <div class="nm">{{ item.name }}</div>
+            <div class="src">
+              {% if loop.index == 1 %}<span class="best-tag">BEST</span>{% endif %}
+              {{ item.site }}
+            </div>
+          </div>
+          <div class="price">₹{{ "{:,.0f}".format(item.price) }}</div>
+          <a class="buy" href="{{ item.link }}" target="_blank" rel="noopener">Buy Now</a>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+</body>
+</html>

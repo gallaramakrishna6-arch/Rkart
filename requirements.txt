@@ -3,3 +3,4 @@ selenium
 webdriver-manager
 deep-translator
 gunicorn
+python-dotenv

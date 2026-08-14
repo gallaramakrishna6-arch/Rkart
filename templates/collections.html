@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Collections — RKart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0B1120; --ink-2:#111a2e; --ink-3:#182238;
+    --line:rgba(255,255,255,0.08);
+    --text:#EDEFF5; --text-dim:#9AA4BD;
+    --gold:#D4A54E; --gold-soft:rgba(212,165,78,0.14);
+    --radius:16px; --serif:'Fraunces', serif; --sans:'Manrope', sans-serif;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1200px 600px at 15% -10%, rgba(212,165,78,0.10), transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, rgba(45,212,191,0.08), transparent 55%),
+      var(--ink);
+    color:var(--text); font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit; text-decoration:none;}
+  button{font-family:var(--sans); cursor:pointer;}
+  .wrap{max-width:960px; margin:0 auto; padding:0 24px;}
+  header{padding:18px 28px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between;}
+  .brand-logo{
+    display:inline-flex; align-items:center; gap:9px;
+    font-family:var(--serif); font-size:23px; font-weight:700;
+    padding:5px 12px 5px 6px; border-radius:10px;
+    background:linear-gradient(135deg, rgba(212,165,78,0.16), rgba(212,165,78,0.02));
+    border:1px solid rgba(212,165,78,0.28);
+  }
+  .brand-logo .dot{width:9px; height:9px; border-radius:50%; background:var(--gold); box-shadow:0 0 14px var(--gold); margin-right:2px;}
+  .brand-logo .rk{color:var(--gold);}
+  .brand-logo .art{color:var(--text);}
+  .back-btn{
+    font-size:13px; font-weight:700; color:var(--text-dim);
+    border:1px solid var(--line); padding:8px 14px; border-radius:9px; transition:.15s;
+  }
+  .back-btn:hover{border-color:var(--gold); color:var(--gold);}
+
+  .page-head{padding:40px 0 24px;}
+  .page-head h1{font-family:var(--serif); font-size:28px; font-weight:600;}
+  .page-head p{color:var(--text-dim); font-size:14px; margin-top:4px;}
+
+  .pending-card{
+    background:var(--gold-soft); border:1px solid rgba(212,165,78,0.35); border-radius:var(--radius);
+    padding:18px 20px; display:flex; align-items:center; gap:14px; margin-bottom:28px;
+  }
+  .pending-card img{width:48px; height:48px; object-fit:cover; border-radius:9px; background:var(--ink-3);}
+  .pending-card .txt{flex:1; font-size:13.5px;}
+  .pending-card .txt b{display:block; font-size:14.5px; margin-bottom:2px;}
+
+  .new-col-form{
+    display:flex; gap:10px; margin-bottom:28px;
+  }
+  .new-col-form input{
+    flex:1; background:var(--ink-2); border:1px solid var(--line); border-radius:9px;
+    padding:12px 14px; color:var(--text); font-family:var(--sans); font-size:14.5px; outline:none;
+  }
+  .new-col-form input:focus{border-color:var(--gold);}
+  .new-col-form button{
+    background:linear-gradient(135deg, var(--gold), #b9863a); color:#1a1204; font-weight:700;
+    font-size:14px; border:none; padding:0 22px; border-radius:9px;
+  }
+
+  .col-grid{display:grid; grid-template-columns:repeat(2, 1fr); gap:14px; margin-bottom:40px;}
+  @media (max-width:600px){ .col-grid{grid-template-columns:1fr;} }
+  .col-card{
+    background:var(--ink-2); border:1px solid var(--line); border-radius:var(--radius);
+    padding:20px; transition:border-color .2s ease, transform .2s ease; display:block;
+  }
+  .col-card:hover{border-color:var(--gold); transform:translateY(-2px);}
+  .col-card h3{font-family:var(--serif); font-size:17px; font-weight:600; margin-bottom:4px;}
+  .col-card p{font-size:13px; color:var(--text-dim);}
+  .col-card.add-here{border-style:dashed;}
+  .col-card.add-here form button{
+    width:100%; background:none; border:none; text-align:left; cursor:pointer;
+    font-family:inherit; color:inherit; padding:0;
+  }
+
+  .empty-state{
+    text-align:center; padding:60px 20px; background:var(--ink-2);
+    border:1px dashed var(--line); border-radius:var(--radius); color:var(--text-dim); margin-bottom:20px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="/" class="brand-logo"><span class="dot"></span><span class="rk">RK</span><span class="art">art</span></a>
+  <a href="/" class="back-btn">← Back to shopping</a>
+</header>
+
+<div class="wrap">
+  <div class="page-head">
+    <h1>My Collections</h1>
+    <p>Organize saved products into lists like "New Phone" or "Gaming Setup"</p>
+  </div>
+
+  {% if pending_product %}
+  <div class="pending-card">
+    <img src="{{ pending_product.image if pending_product.image else 'https://placehold.co/100x100/182238/9AA4BD?text=No+Image' }}" alt="">
+    <div class="txt"><b>Saving: {{ pending_product.name }}</b>{{ pending_product.store }} · ₹{{ pending_product.price }} — pick a collection below, or create a new one.</div>
+  </div>
+  {% endif %}
+
+  <form class="new-col-form" method="POST" action="/collections/create">
+    <input type="text" name="name" placeholder="New collection name (e.g. Gaming Setup)" required>
+    {% if pending_product %}
+      <input type="hidden" name="save_name" value="{{ pending_product.name }}">
+      <input type="hidden" name="save_store" value="{{ pending_product.store }}">
+      <input type="hidden" name="save_price" value="{{ pending_product.price }}">
+      <input type="hidden" name="save_image" value="{{ pending_product.image }}">
+      <input type="hidden" name="save_link" value="{{ pending_product.link }}">
+    {% endif %}
+    <button type="submit">Create{% if pending_product %} & Add{% endif %}</button>
+  </form>
+
+  {% if collections and collections|length > 0 %}
+  <div class="col-grid">
+    {% for c in collections %}
+      {% if pending_product %}
+      <div class="col-card add-here">
+        <form method="POST" action="/collections/{{ c.id }}/add">
+          <input type="hidden" name="name" value="{{ pending_product.name }}">
+          <input type="hidden" name="store" value="{{ pending_product.store }}">
+          <input type="hidden" name="price" value="{{ pending_product.price }}">
+          <input type="hidden" name="image" value="{{ pending_product.image }}">
+          <input type="hidden" name="link" value="{{ pending_product.link }}">
+          <button type="submit">
+            <h3>{{ c.name }}</h3>
+            <p>{{ c.count }} product{{ 's' if c.count != 1 else '' }} · tap to add here</p>
+          </button>
+        </form>
+      </div>
+      {% else %}
+      <a class="col-card" href="/collections/{{ c.id }}">
+        <h3>{{ c.name }}</h3>
+        <p>{{ c.count }} product{{ 's' if c.count != 1 else '' }}</p>
+      </a>
+      {% endif %}
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state">No collections yet — create one above.</div>
+  {% endif %}
+</div>
+
+</body>
+</html>
