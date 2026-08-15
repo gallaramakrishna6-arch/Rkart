@@ -13,6 +13,15 @@ import re
 import difflib
 import concurrent.futures
 
+# Railway (and most PaaS free/hobby tiers) give this app far less RAM than
+# a local dev machine, and 4 simultaneous headless Chrome instances is what
+# was crashing the deployed worker (gunicorn logs showed repeated WORKER
+# TIMEOUT -> SIGKILL). RAILWAY_ENVIRONMENT is set automatically by Railway;
+# PORT is also always set in that kind of hosted environment and not
+# typically set when running `python app.py` locally, so either check
+# reliably tells us "this is NOT the local dev machine".
+IS_PRODUCTION = bool(os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("PORT"))
+
 
 SITE_LOGOS = {
     "Amazon": "https://upload.wikimedia.org/wikipedia/commons/a/a9/Amazon_logo.svg",
@@ -1320,19 +1329,25 @@ def search_products(query, subcategory=None, section=None, limit=10):
             else:
                 fns = [search_amazon, search_flipkart, search_croma, search_reliancedigital]
 
-        # Run every site's scraper in its own thread, in parallel — each
-        # scraper opens its own independent Chrome driver (get_driver()),
-        # so there's no shared state between them and this is safe. This
-        # is what cuts total search time from "sum of every site's time"
-        # down to roughly "the slowest single site's time".
-        all_results = []
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(fns)) as executor:
-            future_to_fn = {executor.submit(safe_call, fn, q): fn for fn in fns}
-            for future in concurrent.futures.as_completed(future_to_fn):
-                fn = future_to_fn[future]
-                r = future.result()
+        # Railway's RAM budget can't hold several simultaneous headless
+        # Chrome instances (this is what was causing WORKER TIMEOUT ->
+        # SIGKILL in production) — run sequentially there. Locally, run
+        # in parallel for speed.
+        if IS_PRODUCTION:
+            all_results = []
+            for fn in fns:
+                r = safe_call(fn, q)
                 print(f"{fn.__name__}: {len(r)} products")
                 all_results += r
+        else:
+            all_results = []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=len(fns)) as executor:
+                future_to_fn = {executor.submit(safe_call, fn, q): fn for fn in fns}
+                for future in concurrent.futures.as_completed(future_to_fn):
+                    fn = future_to_fn[future]
+                    r = future.result()
+                    print(f"{fn.__name__}: {len(r)} products")
+                    all_results += r
 
         print(f"Total (before filtering): {len(all_results)}")
         return all_results
