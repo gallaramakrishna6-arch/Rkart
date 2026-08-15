@@ -2,6 +2,18 @@
 
 RKart is an AI-powered price comparison platform that collects product information from multiple e-commerce websites and displays it in one place — helping users compare prices, offers, and product details to make smarter purchasing decisions.
 
+🔗 **Live Demo:** [rkart-production.up.railway.app](https://rkart-production.up.railway.app)
+
+## Screenshots
+
+| Home | Home (Categories) |
+|---|---|
+| ![Home](screenshots/rkart%20home1.jpg) | ![Home Categories](screenshots/rkart%20home2.jpg) |
+
+| Electronics | Pricing / Search Results |
+|---|---|
+| ![Electronics](screenshots/rkart%20electronics1.jpg) | ![Price](screenshots/rkart%20price.jpg) |
+
 ## Supported Stores
 - Amazon
 - Flipkart
