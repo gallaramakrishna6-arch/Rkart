@@ -2,6 +2,18 @@
 
 RKart is an AI-powered price comparison platform that collects product information from multiple e-commerce websites and displays it in one place — helping users compare prices, offers, and product details to make smarter purchasing decisions.
 
+🔗 **Live Demo:** [rkart-production.up.railway.app](https://rkart-production.up.railway.app)
+
+## Screenshots
+
+| Home | Home (Categories) |
+|---|---|
+| ![Home](screenshots/rkart%20home1.jpg) | ![Home Categories](screenshots/rkart%20home2.jpg) |
+
+| Electronics | Pricing / Search Results |
+|---|---|
+| ![Electronics](screenshots/rkart%20electronics1.jpg) | ![Price](screenshots/rkart%20price.jpg) |
+
 ## Supported Stores
 - Amazon
 - Flipkart
@@ -38,10 +50,6 @@ python app.py
 ```
 
 Create a `.env` file in the project root with:
-```
-SECRET_KEY=<a long random string>
-```
-
 Generate one with:
 ```bash
 python -c "import secrets; print(secrets.token_hex(32))"
@@ -50,3 +58,18 @@ python -c "import secrets; print(secrets.token_hex(32))"
 ## Deployment
 
 This project includes a `Dockerfile` for containerized deployment (tested on Railway). Set the `SECRET_KEY` environment variable on your platform before deploying.
+
+## Roadmap
+
+RKart is under active development. Planned improvements include:
+- Expanding accurate grocery and electronics coverage across more stores
+- Improving scraping accuracy and reducing price/product mismatches
+- Faster search response times
+- Broader mobile responsiveness polish
+
+## Author
+
+**Ramakrishna Galla**
+- 🌐 Portfolio: [gallaramakrishna6-arch.github.io/RKprojects](https://gallaramakrishna6-arch.github.io/RKprojects/#home)
+- 💼 LinkedIn: [linkedin.com/in/galla-ramakrishna](https://www.linkedin.com/in/galla-ramakrishna/)
+- 📄 Naukri: [View Profile](https://www.naukri.com/mnjuser/profile?tab=Activity)
